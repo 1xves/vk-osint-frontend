@@ -926,15 +926,18 @@ async function renderOverview() {
   showOnly('loading');
   try {
     const ck = S.city;
-    const [ov, topData] = await Promise.all([
+    const [ovRes, topRes] = await Promise.allSettled([
       cached('ov:' + ck, () => api('/cities/' + ck)),
       cached('top:' + ck, () => api('/cities/' + ck + '/entities', { flag: 'top_influencer', limit: 10 })),
     ]);
 
-    updateHeader(ov);
+    const ov      = ovRes.status  === 'fulfilled' ? ovRes.value  : null;
+    const topData = topRes.status === 'fulfilled' ? topRes.value : { entities: [] };
 
-    const byType = ov.entity_counts?.by_type ?? {};
-    const total  = ov.entity_counts?.total ?? 0;
+    if (ov) updateHeader(ov);
+
+    const byType = ov?.entity_counts?.by_type ?? {};
+    const total  = ov?.entity_counts?.total ?? 0;
     const maxN   = Math.max(...Object.values(byType), 1);
 
     el('v-overview').innerHTML = `
@@ -946,11 +949,11 @@ async function renderOverview() {
           </div>
           <div class="stat-card">
             <div class="stat-label">Relationships Mapped</div>
-            <div class="stat-value">${fmt(ov.relationship_count ?? 0)}</div>
+            <div class="stat-value">${fmt(ov?.relationship_count ?? 0)}</div>
           </div>
           <div class="stat-card accent">
             <div class="stat-label">Top Influencers</div>
-            <div class="stat-value">${fmt(ov.top_influencers ?? 0)}</div>
+            <div class="stat-value">${fmt(ov?.top_influencers ?? 0)}</div>
           </div>
         </div>
 
@@ -975,19 +978,19 @@ async function renderOverview() {
             <div class="panel">
               <div class="signal-grid">
                 <div class="signal-tile partner">
-                  <div class="signal-n">${ov.partner_candidates ?? 0}</div>
+                  <div class="signal-n">${ov?.partner_candidates ?? 0}</div>
                   <div class="signal-desc">Partner Candidates</div>
                 </div>
                 <div class="signal-tile blocker">
-                  <div class="signal-n">${ov.blocker_candidates ?? 0}</div>
+                  <div class="signal-n">${ov?.blocker_candidates ?? 0}</div>
                   <div class="signal-desc">Potential Blockers</div>
                 </div>
                 <div class="signal-tile investment">
-                  <div class="signal-n">${ov.investment_candidates ?? 0}</div>
+                  <div class="signal-n">${ov?.investment_candidates ?? 0}</div>
                   <div class="signal-desc">Investment Targets</div>
                 </div>
                 <div class="signal-tile competitor">
-                  <div class="signal-n">${ov.competitor_candidates ?? 0}</div>
+                  <div class="signal-n">${ov?.competitor_candidates ?? 0}</div>
                   <div class="signal-desc">Competitors</div>
                 </div>
               </div>
@@ -1132,7 +1135,10 @@ function buildPlayersView() {
 }
 
 function playerCard(e) {
-  const col = TYPE_COLOR[e.entity_type] || '#737a99';
+  const col   = TYPE_COLOR[e.entity_type] || '#737a99';
+  const desc  = deriveDesc(e);
+  const tier  = e.category_fields?.phase_0_tier;
+  const tierColor = tier === 'high' ? 'var(--teal)' : tier === 'medium' ? 'var(--gold)' : 'var(--muted)';
   const flags = Object.entries(FLAG_META)
     .filter(([k]) => e[k])
     .map(([, m]) => `<span class="pflag ${m.cls}">${m.label}</span>`)
@@ -1146,9 +1152,10 @@ function playerCard(e) {
       <div class="player-type" style="background:${col}1a;color:${col}">
         ${TYPE_LABEL[e.entity_type]||e.entity_type}
       </div>
-      ${e.description
-        ? `<div class="player-desc">${esc(e.description)}</div>`
+      ${desc
+        ? `<div class="player-desc">${esc(desc)}</div>`
         : `<div class="player-desc" style="font-style:italic;color:var(--faint)">No profile available</div>`}
+      ${tier ? `<div style="font-size:10.5px;color:var(--muted);margin-top:5px">Influence tier: <span style="color:${tierColor};font-weight:500">${tier.charAt(0).toUpperCase()+tier.slice(1)}</span></div>` : ''}
       ${flags ? `<div class="player-flags">${flags}</div>` : ''}
     </div>`;
 }
@@ -1363,6 +1370,35 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+function fmtAsset(n) {
+  if (!n || n <= 0) return null;
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return Math.round(n / 1e6) + 'M';
+  return n.toLocaleString();
+}
+
+function deriveDesc(e) {
+  if (e.description) return e.description;
+  const cf = e.category_fields || {};
+  // Person: community leader / executive
+  if (e.entity_type === 'community_leader' || e.entity_type === 'executive_hnw') {
+    const org  = cf.affiliated_organization;
+    const role = cf.title_or_role;
+    const bc   = cf.board_count || (cf.board_seats?.length ?? 0);
+    if (org && role) return `${role}${bc > 1 ? ' · ' + bc + ' board seats' : ''} · ${org}`;
+    if (org)         return `Board member · ${org}`;
+  }
+  // Org: nonprofit / corporate / philanthropic / investor
+  const parts   = [];
+  const sector  = cf.phase_0_sector;
+  const assets  = cf.phase_0_asset_usd ? fmtAsset(cf.phase_0_asset_usd) : null;
+  const members = cf.phase_0_top_members;
+  if (sector)          parts.push(sector.charAt(0).toUpperCase() + sector.slice(1));
+  if (assets)          parts.push('$' + assets + ' in assets');
+  if (members?.length) parts.push(members.slice(0, 3).join(', '));
+  return parts.length ? parts.join(' · ') : null;
+}
+
 function viewError(view, err) {
   el('v-' + view).innerHTML = `
     <div class="empty-view" style="color:var(--red)">
