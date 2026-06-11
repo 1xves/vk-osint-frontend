@@ -1233,6 +1233,16 @@ function buildGraph(edges) {
   const W = wrap.clientWidth;
   const H = wrap.clientHeight;
 
+  // Deduplicate edges: board relationships are written A→B and B→A.
+  // Keep one canonical direction per pair (sorted by UUID).
+  const seen = new Set();
+  const deduped = [];
+  for (const e of edges) {
+    const key = [e.source_entity_id, e.target_entity_id].sort().join('|');
+    if (!seen.has(key)) { seen.add(key); deduped.push(e); }
+  }
+  edges = deduped;
+
   // Build node index from edge endpoints
   const nodeMap = new Map();
   const addNode = (id, name, type) => {
