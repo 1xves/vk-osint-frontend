@@ -12,3 +12,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Cloudflare wrangler local cache
+atlas-deploy-v3/.wrangler/
