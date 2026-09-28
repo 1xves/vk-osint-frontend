@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gli-ingest — the GLI crawler</title>
+<meta name="description" content="gli-ingest is GLI's ingestion crawler. What it is, what it collects, and how to reach us.">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #262c36;
+    --text: #e6edf3;
+    --muted: #9aa7b4;
+    --accent: #5aa2ff;
+    --accent-soft: rgba(90, 162, 255, 0.12);
+    --ok: #4ec98f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --border: #e3e8ef;
+      --text: #101720;
+      --muted: #566374;
+      --accent: #1f6feb;
+      --accent-soft: rgba(31, 111, 235, 0.08);
+      --ok: #1a7f4b;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 72px 24px 96px; }
+  header { margin-bottom: 56px; }
+  .mark {
+    display: inline-block; font-weight: 700; letter-spacing: 0.14em;
+    font-size: 13px; color: var(--accent);
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--accent-soft);
+  }
+  h1 {
+    font-size: clamp(28px, 5.5vw, 42px); line-height: 1.1; margin: 26px 0 14px;
+    letter-spacing: -0.02em; font-weight: 700;
+  }
+  .lede { font-size: clamp(17px, 2.4vw, 20px); color: var(--muted); margin: 0; max-width: 60ch; }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); font-weight: 600; margin: 0 0 18px;
+  }
+  section { margin-top: 52px; }
+  p { margin: 0 0 16px; }
+  .about { font-size: 17px; }
+  ul.behaviours { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ul.behaviours li {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px;
+  }
+  ul.behaviours li b { display: block; margin-bottom: 4px; font-weight: 650; }
+  ul.behaviours li span { color: var(--muted); font-size: 15px; }
+  .ua {
+    display: block; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; margin: 0 0 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px;
+    color: var(--text); overflow-x: auto; white-space: nowrap;
+  }
+  a { color: var(--accent); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em;
+    background: var(--accent-soft); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+  .contact {
+    background: var(--accent-soft); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px 24px; font-size: 17px;
+  }
+  .contact a { font-weight: 650; }
+  footer {
+    margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="mark">GLI-INGEST</span>
+    <h1>The GLI ingestion crawler.</h1>
+    <p class="lede">If you are a site owner and saw <code>gli-ingest</code> in your logs, this page is for you.</p>
+  </header>
+
+  <section>
+    <h2>What it is</h2>
+    <p class="about"><code>gli-ingest</code> is the automated fetcher behind GLI, a provenance-first entity graph of people and organizations built from public documents. It retrieves publicly accessible pages so their contents can be attributed to the entities they mention, with the source kept attached to every claim. It identifies itself honestly on every request:</p>
+    <span class="ua">gli-ingest/0.1 (+https://finitebuilds.com; security@finitebuilds.com)</span>
+    <p>It does not imitate a browser and does not vary its identity to get past a block.</p>
+  </section>
+
+  <section>
+    <h2>What it collects</h2>
+    <p class="about">Publicly accessible civic records and news pages relevant to the entity graph. It stores what it fetches content-addressed, for provenance and de-duplication. It does not attempt authenticated, paywalled, or private content, and it does not submit forms or log in.</p>
+  </section>
+
+  <section>
+    <h2>How it behaves</h2>
+    <ul class="behaviours">
+      <li>
+        <b>Respects <code>robots.txt</code></b>
+        <span>It checks each origin's <code>robots.txt</code> before fetching and honours it. If <code>robots.txt</code> is withheld (401/403), unreachable, or disallows the path, it does not fetch.</span>
+      </li>
+      <li>
+        <b>Polite by default</b>
+        <span>Rate-limited per source, with backoff on <code>429</code>/<code>Retry-After</code>. It is a low-volume collector, not a bulk mirror.</span>
+      </li>
+      <li>
+        <b>Identifies, never impersonates</b>
+        <span>The User-Agent above names the project and carries a contact route. If you would rather it not fetch your site, tell us and it will not.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Reach us</h2>
+    <p class="contact">Questions, corrections, or a request to be excluded: <a href="mailto:security@finitebuilds.com">security@finitebuilds.com</a>. We will honour exclusion requests.</p>
+  </section>
+
+  <footer>
+    <a href="/">&larr; GLI</a> &nbsp;·&nbsp; Static site — no live backend. finitebuilds.com
+  </footer>
+
+</div>
+</body>
+</html>
