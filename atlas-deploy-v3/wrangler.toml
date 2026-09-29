@@ -1,9 +1,0 @@
-name = "vk-osint-dashboard"
-main = "atlas-worker-bundle.js"
-compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
-
-[assets]
-directory = "./dist"
-binding = "ASSETS"
-run_worker_first = true
